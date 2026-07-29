@@ -1,0 +1,20 @@
+meta {
+  name: Actualizar Cliente
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8080/api/v1/clientes/1
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "Ana López",
+    "email": "ana.lopez@example.com",
+    "direccion": "Calle Falsa 456",
+    "telefono": "5598765432"
+  }
+}

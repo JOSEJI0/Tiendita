@@ -1,0 +1,20 @@
+meta {
+  name: Actualizar Proveedor
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8080/api/v1/proveedores/1
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "Proveedor Actualizado",
+    "email": "nuevo@proveedor.com",
+    "direccion": "Av. Principal 789",
+    "telefono": "5544332211"
+  }
+}

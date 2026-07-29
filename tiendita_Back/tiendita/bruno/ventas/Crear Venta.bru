@@ -1,0 +1,32 @@
+meta {
+  name: Crear Venta
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/v1/ventas
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "fecha": "2026-06-26T10:30:00",
+    "total": 301.0,
+    "estadoPago": "Pagado",
+    "cliente": {
+      "id": 1
+    },
+    "detalles": [
+      {
+        "cantidad": 2,
+        "precioUnitario": 150.5,
+        "subtotal": 301.0,
+        "producto": {
+          "id": 1
+        }
+      }
+    ]
+  }
+}

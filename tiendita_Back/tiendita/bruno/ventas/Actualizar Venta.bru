@@ -1,0 +1,32 @@
+meta {
+  name: Actualizar Venta
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8080/api/v1/ventas/1
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "fecha": "2026-06-26T12:00:00",
+    "total": 540.0,
+    "estadoPago": "Pendiente",
+    "cliente": {
+      "id": 1
+    },
+    "detalles": [
+      {
+        "cantidad": 3,
+        "precioUnitario": 180.0,
+        "subtotal": 540.0,
+        "producto": {
+          "id": 1
+        }
+      }
+    ]
+  }
+}

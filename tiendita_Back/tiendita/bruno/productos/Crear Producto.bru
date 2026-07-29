@@ -1,0 +1,27 @@
+meta {
+  name: Crear Producto
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/v1/productos
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "Laptop",
+    "descripcion": "Laptop 15 pulgadas",
+    "precio": 12999.99,
+    "stock": 10,
+    "imagenUrl": "https://example.com/laptop.jpg",
+    "categoria": {
+      "id": 1
+    },
+    "proveedor": {
+      "id": 1
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-TienditaApplication<tiendita>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.jjtm.tiendita.TienditaApplication",
+            "projectName": "tiendita",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
