@@ -1,0 +1,50 @@
+services:
+  db:
+    image: mysql:8
+    command: --port=3307
+    environment:
+      MYSQL_DATABASE: tiendita_db
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:?Debe definir DB_PASS}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-P", "3307", "-u", "root", "-p${DB_PASS}"]
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - tiendita-net
+
+  backend:
+    build: ./tiendita_Back/tiendita
+    environment:
+      DB_URL: jdbc:mysql://db:3307/tiendita_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USER: root
+      DB_PASS: ${DB_PASS:?Debe definir DB_PASS}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:?Debe definir STRIPE_SECRET_KEY}
+      JWT_SECRET: ${JWT_SECRET:?Debe definir JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://161.35.108.42:8082}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - tiendita-net
+
+  frontend:
+    build: ./tiendita_Front/tiendita
+    ports:
+      - "8082:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - tiendita-net
+
+volumes:
+  mysql_data:
+
+networks:
+  tiendita-net:
+    driver: bridge

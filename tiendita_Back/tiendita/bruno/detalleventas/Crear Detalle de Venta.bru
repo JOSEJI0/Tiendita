@@ -1,0 +1,25 @@
+meta {
+  name: Crear Detalle de Venta
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/v1/detalleventas
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "cantidad": 2,
+    "precioUnitario": 150.5,
+    "subtotal": 301.0,
+    "venta": {
+      "id": 1
+    },
+    "producto": {
+      "id": 1
+    }
+  }
+}

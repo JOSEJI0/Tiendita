@@ -1,0 +1,27 @@
+meta {
+  name: Actualizar Producto
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8080/api/v1/productos/1
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "Laptop Gamer",
+    "descripcion": "Laptop para gaming",
+    "precio": 15999.99,
+    "stock": 5,
+    "imagenUrl": "https://example.com/laptop-gamer.jpg",
+    "categoria": {
+      "id": 1
+    },
+    "proveedor": {
+      "id": 1
+    }
+  }
+}
