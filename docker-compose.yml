@@ -25,6 +25,8 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:?Debe definir STRIPE_SECRET_KEY}
       JWT_SECRET: ${JWT_SECRET:?Debe definir JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://161.35.108.42:8082}
+    volumes:
+      - maven_cache:/root/.m2
     depends_on:
       db:
         condition: service_healthy
@@ -44,6 +46,7 @@ services:
 
 volumes:
   mysql_data:
+  maven_cache:
 
 networks:
   tiendita-net:
