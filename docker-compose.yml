@@ -23,7 +23,7 @@ services:
       DB_PASS: ${DB_PASS:?Debe definir DB_PASS}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:?Debe definir STRIPE_SECRET_KEY}
       JWT_SECRET: ${JWT_SECRET:?Debe definir JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://161.35.108.42}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://161.35.108.42:8082}
     depends_on:
       db:
         condition: service_healthy
@@ -34,7 +34,7 @@ services:
   frontend:
     build: ./tiendita_Front/tiendita
     ports:
-      - "80:80"
+      - "8082:80"
     depends_on:
       - backend
     restart: unless-stopped
