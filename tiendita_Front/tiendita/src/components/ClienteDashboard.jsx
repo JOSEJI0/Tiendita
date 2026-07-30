@@ -18,13 +18,13 @@ const formatFecha = (fecha) => {
     return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
-export const ClienteDashboard = ({ user, setVistaActual, openCart, setVentaActiva, setCart }) => {
+export const ClienteDashboard = ({ user, setUser, setVistaActual, openCart, setVentaActiva, setCart }) => {
     const [compras, setCompras] = useState([]);
     const [carga, setCarga] = useState(true);
     const [error, setError] = useState('');
 
     const [editandoPerfil, setEditandoPerfil] = useState(false);
-    const [formPerfil, setFormPerfil] = useState({ nombre: user?.nombre || '', direccion: '', telefono: '' });
+    const [formPerfil, setFormPerfil] = useState({ username: user?.username || '', nombre: user?.nombre || '', direccion: user?.direccion || '', telefono: user?.telefono || '' });
     const [formPass, setFormPass] = useState(null);
     const [guardandoPerfil, setGuardandoPerfil] = useState(false);
 
@@ -45,11 +45,25 @@ export const ClienteDashboard = ({ user, setVistaActual, openCart, setVentaActiv
 
     useEffect(() => {
         cargar();
+        if (user?.id) {
+            apiService.getUsuario(user.id).then((fullUser) => {
+                if (fullUser && setUser) {
+                    setUser(prev => ({
+                        ...prev,
+                        username: fullUser.username,
+                        nombre: fullUser.nombre,
+                        direccion: fullUser.direccion || '',
+                        telefono: fullUser.telefono || ''
+                    }));
+                }
+            }).catch(e => console.warn('Error al cargar perfil:', e));
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.username]);
 
     const abrirEditarPerfil = () => {
         setFormPerfil({
+            username: user?.username || '',
             nombre: user?.nombre || '',
             direccion: user?.direccion || '',
             telefono: user?.telefono || '',
@@ -61,15 +75,22 @@ export const ClienteDashboard = ({ user, setVistaActual, openCart, setVentaActiv
         e.preventDefault();
         setGuardandoPerfil(true);
         try {
-            await apiService.updateUsuario(user.id, {
+            const payload = {
+                username: formPerfil.username.trim(),
                 nombre: formPerfil.nombre.trim(),
                 direccion: formPerfil.direccion.trim(),
                 telefono: formPerfil.telefono.trim(),
-            });
-            localStorage.setItem('nombre', formPerfil.nombre.trim());
-            if (user?.direccion !== undefined) localStorage.setItem('direccion', formPerfil.direccion.trim());
-            if (user?.telefono !== undefined) localStorage.setItem('telefono', formPerfil.telefono.trim());
-            user.nombre = formPerfil.nombre.trim();
+            };
+            const actualizado = await apiService.updateUsuario(user.id, payload);
+            const newUserState = {
+                ...user,
+                username: actualizado.username,
+                nombre: actualizado.nombre,
+                direccion: actualizado.direccion || '',
+                telefono: actualizado.telefono || '',
+            };
+            if (setUser) setUser(newUserState);
+            apiService.setSession(actualizado);
             setEditandoPerfil(false);
             alert('Perfil actualizado correctamente.');
         } catch (err) {
@@ -188,6 +209,13 @@ export const ClienteDashboard = ({ user, setVistaActual, openCart, setVentaActiv
                     {editandoPerfil ? (
                         <form onSubmit={guardarPerfil} className="space-y-4 max-w-lg">
                             <label className="block">
+                                <span className="text-xs font-bold text-gray-700 mb-1 block">Username / Email</span>
+                                <input type="email" value={formPerfil.username}
+                                    onChange={(e) => setFormPerfil({ ...formPerfil, username: e.target.value })}
+                                    required
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                            </label>
+                            <label className="block">
                                 <span className="text-xs font-bold text-gray-700 mb-1 block">Nombre</span>
                                 <input type="text" value={formPerfil.nombre}
                                     onChange={(e) => setFormPerfil({ ...formPerfil, nombre: e.target.value })}
@@ -195,15 +223,17 @@ export const ClienteDashboard = ({ user, setVistaActual, openCart, setVentaActiv
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
                             </label>
                             <label className="block">
-                                <span className="text-xs font-bold text-gray-700 mb-1 block">Dirección</span>
-                                <input type="text" value={formPerfil.direccion}
-                                    onChange={(e) => setFormPerfil({ ...formPerfil, direccion: e.target.value })}
-                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
-                            </label>
-                            <label className="block">
                                 <span className="text-xs font-bold text-gray-700 mb-1 block">Teléfono</span>
                                 <input type="text" value={formPerfil.telefono}
                                     onChange={(e) => setFormPerfil({ ...formPerfil, telefono: e.target.value })}
+                                    placeholder="55 1234 5678"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                            </label>
+                            <label className="block">
+                                <span className="text-xs font-bold text-gray-700 mb-1 block">Dirección</span>
+                                <input type="text" value={formPerfil.direccion}
+                                    onChange={(e) => setFormPerfil({ ...formPerfil, direccion: e.target.value })}
+                                    placeholder="Calle, colonia, ciudad"
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
                             </label>
                             <div className="flex items-center gap-2 pt-2">
@@ -220,33 +250,44 @@ export const ClienteDashboard = ({ user, setVistaActual, openCart, setVentaActiv
                             </div>
                         </form>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div className="flex items-center gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                                 <div className="p-2 rounded-lg bg-green-50 text-green-600">
                                     <User className="w-5 h-5" />
                                 </div>
-                                <div>
+                                <div className="truncate">
                                     <div className="text-xs text-gray-500 font-medium">Nombre</div>
-                                    <div className="font-bold text-gray-800">{user?.nombre || '—'}</div>
+                                    <div className="font-bold text-gray-800 truncate">{user?.nombre || '—'}</div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                                 <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
                                     <Mail className="w-5 h-5" />
                                 </div>
-                                <div>
-                                    <div className="text-xs text-gray-500 font-medium">Email</div>
-                                    <div className="font-bold text-gray-800">{user?.username || '—'}</div>
+                                <div className="truncate">
+                                    <div className="text-xs text-gray-500 font-medium">Email / Username</div>
+                                    <div className="font-bold text-gray-800 truncate">{user?.username || '—'}</div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
+                                    <Home className="w-5 h-5" />
+                                </div>
+                                <div className="truncate">
+                                    <div className="text-xs text-gray-500 font-medium">Teléfono / Dirección</div>
+                                    <div className="font-bold text-gray-800 text-xs truncate">
+                                        {user?.telefono || '—'} {user?.direccion ? `· ${user.direccion}` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                                 <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
                                     <Key className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 font-medium">Contraseña</div>
                                     <button onClick={abrirCambiarPass}
-                                        className="font-bold text-green-700 hover:text-green-800 text-sm cursor-pointer">
+                                        className="font-bold text-green-700 hover:text-green-800 text-xs cursor-pointer">
                                         Cambiar contraseña
                                     </button>
                                 </div>

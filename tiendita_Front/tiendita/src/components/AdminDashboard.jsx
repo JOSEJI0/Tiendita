@@ -5,7 +5,7 @@ import {
     Building2, FolderKanban, Truck,
     Plus, Edit, Trash2, Search, X, AlertTriangle, RefreshCw,
     CheckCircle2, Clock, XCircle, ListOrdered, Save, Tag, Users,
-    Key, UserPlus, Shield, User,
+    Key, UserPlus, Shield, User, Mail, Home, Edit2,
 } from 'lucide-react';
 
 const ESTADO_STYLES = {
@@ -32,7 +32,7 @@ const TABS = [
     { value: 'ventas', label: 'Registro de Ventas', icon: ListOrdered },
 ];
 
-export const AdminDashboard = ({ user, adminSubTab, setAdminSubTab }) => {
+export const AdminDashboard = ({ user, setUser, adminSubTab, setAdminSubTab }) => {
     const tab = adminSubTab || 'productos';
 
     const [productos, setProductos] = useState([]);
@@ -60,6 +60,11 @@ export const AdminDashboard = ({ user, adminSubTab, setAdminSubTab }) => {
     const [formUsuario, setFormUsuario] = useState(null);
     const [formPassword, setFormPassword] = useState(null);
     const [formNuevoAdmin, setFormNuevoAdmin] = useState(null);
+
+    const [editandoPerfilAdmin, setEditandoPerfilAdmin] = useState(false);
+    const [formPerfilAdmin, setFormPerfilAdmin] = useState({ username: user?.username || '', nombre: user?.nombre || '', direccion: user?.direccion || '', telefono: user?.telefono || '' });
+    const [formPassAdmin, setFormPassAdmin] = useState(null);
+    const [guardandoPerfilAdmin, setGuardandoPerfilAdmin] = useState(false);
 
     const cargarProductos = async () => {
         setCargaProductos(true);
@@ -98,7 +103,76 @@ export const AdminDashboard = ({ user, adminSubTab, setAdminSubTab }) => {
     useEffect(() => {
         cargarProductos();
         cargarVentas();
+        if (user?.id) {
+            apiService.getUsuario(user.id).then((fullUser) => {
+                if (fullUser && setUser) {
+                    setUser(prev => ({
+                        ...prev,
+                        username: fullUser.username,
+                        nombre: fullUser.nombre,
+                        direccion: fullUser.direccion || '',
+                        telefono: fullUser.telefono || ''
+                    }));
+                }
+            }).catch(e => console.warn('Error al cargar perfil admin:', e));
+        }
     }, []);
+
+    const abrirEditarPerfilAdmin = () => {
+        setFormPerfilAdmin({
+            username: user?.username || '',
+            nombre: user?.nombre || '',
+            direccion: user?.direccion || '',
+            telefono: user?.telefono || '',
+        });
+        setEditandoPerfilAdmin(true);
+    };
+
+    const guardarPerfilAdmin = async (e) => {
+        e.preventDefault();
+        setGuardandoPerfilAdmin(true);
+        try {
+            const payload = {
+                username: formPerfilAdmin.username.trim(),
+                nombre: formPerfilAdmin.nombre.trim(),
+                direccion: formPerfilAdmin.direccion.trim(),
+                telefono: formPerfilAdmin.telefono.trim(),
+            };
+            const actualizado = await apiService.updateUsuario(user.id, payload);
+            const newUserState = {
+                ...user,
+                username: actualizado.username,
+                nombre: actualizado.nombre,
+                direccion: actualizado.direccion || '',
+                telefono: actualizado.telefono || '',
+            };
+            if (setUser) setUser(newUserState);
+            apiService.setSession(actualizado);
+            setEditandoPerfilAdmin(false);
+            alert('Perfil actualizado correctamente.');
+        } catch (err) {
+            alert(err?.message || 'No se pudo actualizar el perfil.');
+        } finally {
+            setGuardandoPerfilAdmin(false);
+        }
+    };
+
+    const abrirCambiarPassAdmin = () => setFormPassAdmin({ passwordActual: '', nuevoPassword: '' });
+    const cerrarCambiarPassAdmin = () => setFormPassAdmin(null);
+
+    const guardarCambiarPassAdmin = async (e) => {
+        e.preventDefault();
+        try {
+            await apiService.changePassword(user.id, {
+                passwordActual: formPassAdmin.passwordActual,
+                nuevoPassword: formPassAdmin.nuevoPassword,
+            });
+            alert('Contraseña actualizada correctamente.');
+            cerrarCambiarPassAdmin();
+        } catch (err) {
+            alert(err?.message || 'No se pudo cambiar la contraseña.');
+        }
+    };
 
     const metricas = useMemo(() => {
         const totalRecaudado = ventas
@@ -383,6 +457,112 @@ export const AdminDashboard = ({ user, adminSubTab, setAdminSubTab }) => {
                 </div>
             </div>
 
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                    <div className="flex items-center gap-2">
+                        <User className="w-5 h-5 text-green-600" />
+                        <h2 className="font-bold text-gray-800">Mi Perfil (Administrador)</h2>
+                    </div>
+                    {!editandoPerfilAdmin && (
+                        <button onClick={abrirEditarPerfilAdmin}
+                            className="flex items-center gap-1.5 text-sm font-bold text-green-700 hover:text-green-800 transition-colors cursor-pointer">
+                            <Edit2 className="w-4 h-4" />
+                            Editar perfil
+                        </button>
+                    )}
+                </div>
+                <div className="p-6">
+                    {editandoPerfilAdmin ? (
+                        <form onSubmit={guardarPerfilAdmin} className="space-y-4 max-w-lg">
+                            <label className="block">
+                                <span className="text-xs font-bold text-gray-700 mb-1 block">Username / Email</span>
+                                <input type="email" value={formPerfilAdmin.username}
+                                    onChange={(e) => setFormPerfilAdmin({ ...formPerfilAdmin, username: e.target.value })}
+                                    required
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                            </label>
+                            <label className="block">
+                                <span className="text-xs font-bold text-gray-700 mb-1 block">Nombre</span>
+                                <input type="text" value={formPerfilAdmin.nombre}
+                                    onChange={(e) => setFormPerfilAdmin({ ...formPerfilAdmin, nombre: e.target.value })}
+                                    required
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                            </label>
+                            <label className="block">
+                                <span className="text-xs font-bold text-gray-700 mb-1 block">Teléfono</span>
+                                <input type="text" value={formPerfilAdmin.telefono}
+                                    onChange={(e) => setFormPerfilAdmin({ ...formPerfilAdmin, telefono: e.target.value })}
+                                    placeholder="55 1234 5678"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                            </label>
+                            <label className="block">
+                                <span className="text-xs font-bold text-gray-700 mb-1 block">Dirección</span>
+                                <input type="text" value={formPerfilAdmin.direccion}
+                                    onChange={(e) => setFormPerfilAdmin({ ...formPerfilAdmin, direccion: e.target.value })}
+                                    placeholder="Calle, colonia, ciudad"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                            </label>
+                            <div className="flex items-center gap-2 pt-2">
+                                <button type="submit" disabled={guardandoPerfilAdmin}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50">
+                                    <Save className="w-4 h-4" />
+                                    {guardandoPerfilAdmin ? 'Guardando...' : 'Guardar cambios'}
+                                </button>
+                                <button type="button" onClick={() => setEditandoPerfilAdmin(false)}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold transition-colors cursor-pointer">
+                                    <X className="w-4 h-4" />
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="p-2 rounded-lg bg-green-50 text-green-600">
+                                    <User className="w-5 h-5" />
+                                </div>
+                                <div className="truncate">
+                                    <div className="text-xs text-gray-500 font-medium">Nombre</div>
+                                    <div className="font-bold text-gray-800 truncate">{user?.nombre || '—'}</div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                                <div className="truncate">
+                                    <div className="text-xs text-gray-500 font-medium">Email / Username</div>
+                                    <div className="font-bold text-gray-800 truncate">{user?.username || '—'}</div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
+                                    <Home className="w-5 h-5" />
+                                </div>
+                                <div className="truncate">
+                                    <div className="text-xs text-gray-500 font-medium">Teléfono / Dirección</div>
+                                    <div className="font-bold text-gray-800 text-xs truncate">
+                                        {user?.telefono || '—'} {user?.direccion ? `· ${user.direccion}` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
+                                    <Key className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500 font-medium">Contraseña</div>
+                                    <button onClick={abrirCambiarPassAdmin}
+                                        className="font-bold text-green-700 hover:text-green-800 text-xs cursor-pointer">
+                                        Cambiar contraseña
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                 <MetricaCard
                     icon={Landmark}
@@ -531,6 +711,49 @@ export const AdminDashboard = ({ user, adminSubTab, setAdminSubTab }) => {
                     onClose={cerrarFormPassword}
                     onGuardar={guardarPassword}
                 />
+            )}
+
+            {formPassAdmin && (
+                <div className="fixed inset-0 z-50 bg-green-950/45 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-md w-full max-w-md max-h-[90vh] overflow-y-auto">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                <Key className="w-5 h-5 text-green-600" />
+                                Cambiar contraseña (Admin)
+                            </h3>
+                            <button onClick={cerrarCambiarPassAdmin} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 cursor-pointer">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={guardarCambiarPassAdmin} className="p-6 space-y-4">
+                            <CampoForm label="Contraseña actual" required>
+                                <input type="password" value={formPassAdmin.passwordActual}
+                                    onChange={(e) => setFormPassAdmin({ ...formPassAdmin, passwordActual: e.target.value })}
+                                    required
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                    placeholder="••••••••" />
+                            </CampoForm>
+                            <CampoForm label="Nueva contraseña" required>
+                                <input type="password" value={formPassAdmin.nuevoPassword}
+                                    onChange={(e) => setFormPassAdmin({ ...formPassAdmin, nuevoPassword: e.target.value })}
+                                    required minLength={6}
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                    placeholder="Mínimo 6 caracteres" />
+                            </CampoForm>
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button type="button" onClick={cerrarCambiarPassAdmin}
+                                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold transition-colors cursor-pointer">
+                                    Cancelar
+                                </button>
+                                <button type="submit"
+                                    className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer">
+                                    <Key className="w-4 h-4" />
+                                    Cambiar contraseña
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
 
             {formNuevoAdmin && (

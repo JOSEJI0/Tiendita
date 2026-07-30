@@ -347,6 +347,8 @@ apiService.setSession = (data) => {
     if (data?.token) localStorage.setItem('token', data.token);
     if (data?.username) localStorage.setItem('username', data.username);
     if (data?.nombre) localStorage.setItem('nombre', data.nombre);
+    if (data?.direccion !== undefined && data?.direccion !== null) localStorage.setItem('direccion', data.direccion);
+    if (data?.telefono !== undefined && data?.telefono !== null) localStorage.setItem('telefono', data.telefono);
     if (data?.role || data?.rol) localStorage.setItem('rol', data.role || data.rol);
     if (data?.id) localStorage.setItem('userId', data.id);
 };
@@ -355,6 +357,8 @@ apiService.logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('nombre');
+    localStorage.removeItem('direccion');
+    localStorage.removeItem('telefono');
     localStorage.removeItem('rol');
     localStorage.removeItem('userId');
 };

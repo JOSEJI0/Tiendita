@@ -74,16 +74,29 @@ public class UsuarioService {
     @Transactional
     public UsuarioEntity actualizarUsuario(Long id, UpdateUsuarioRequest request) {
         UsuarioEntity usuario = obtenerUsuario(id);
-        if (request.getUsername() != null && !request.getUsername().equals(usuario.getUsername())) {
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty() && !request.getUsername().equals(usuario.getUsername())) {
             if (usuarioRepository.existsByUsername(request.getUsername())) {
                 throw new IllegalArgumentException("El nombre de usuario ya está en uso.");
             }
-            usuario.setUsername(request.getUsername());
+            usuario.setUsername(request.getUsername().trim());
         }
-        if (request.getNombre() != null) usuario.setNombre(request.getNombre());
-        if (request.getDireccion() != null) usuario.setDireccion(request.getDireccion());
-        if (request.getTelefono() != null) usuario.setTelefono(request.getTelefono());
-        return usuarioRepository.save(usuario);
+        if (request.getNombre() != null) usuario.setNombre(request.getNombre().trim());
+        if (request.getDireccion() != null) usuario.setDireccion(request.getDireccion().trim());
+        if (request.getTelefono() != null) usuario.setTelefono(request.getTelefono().trim());
+
+        UsuarioEntity usuarioGuardado = usuarioRepository.save(usuario);
+
+        if (usuario.getRole() == Rol.ROLE_CLIENTE) {
+            clientesRepository.findFirstByEmail(usuario.getUsername()).ifPresent(cliente -> {
+                if (request.getNombre() != null) cliente.setNombre(request.getNombre().trim());
+                if (request.getDireccion() != null) cliente.setDireccion(request.getDireccion().trim());
+                if (request.getTelefono() != null) cliente.setTelefono(request.getTelefono().trim());
+                if (request.getUsername() != null) cliente.setEmail(request.getUsername().trim());
+                clientesRepository.save(cliente);
+            });
+        }
+
+        return usuarioGuardado;
     }
 
     @Transactional

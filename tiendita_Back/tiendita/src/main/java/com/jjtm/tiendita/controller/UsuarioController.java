@@ -48,8 +48,18 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody UpdateUsuarioRequest request) {
+    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody UpdateUsuarioRequest request,
+            Authentication authentication) {
         try {
+            String usernameActual = authentication.getName();
+            UsuarioEntity target = usuarioService.obtenerUsuario(id);
+            boolean esMismoUsuario = target.getUsername().equals(usernameActual);
+            boolean esAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!esMismoUsuario && !esAdmin) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("No tienes permiso para actualizar este usuario.");
+            }
             UsuarioEntity actualizado = usuarioService.actualizarUsuario(id, request);
             return ResponseEntity.ok(actualizado);
         } catch (IllegalArgumentException e) {

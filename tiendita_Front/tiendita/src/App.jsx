@@ -24,9 +24,27 @@ function App() {
         id: localStorage.getItem('userId'),
         username: localStorage.getItem('username'),
         nombre: localStorage.getItem('nombre'),
+        direccion: localStorage.getItem('direccion') || '',
+        telefono: localStorage.getItem('telefono') || '',
         rol: localStorage.getItem('rol'),
       };
       setUser(restoredUser);
+      if (restoredUser.id) {
+        apiService.getUsuario(restoredUser.id).then((fullUser) => {
+          if (fullUser) {
+            const updated = {
+              id: fullUser.id,
+              username: fullUser.username,
+              nombre: fullUser.nombre,
+              direccion: fullUser.direccion || '',
+              telefono: fullUser.telefono || '',
+              rol: fullUser.role || fullUser.rol,
+            };
+            setUser(updated);
+            apiService.setSession(fullUser);
+          }
+        }).catch(err => console.warn('No se pudo refrescar perfil:', err));
+      }
       if (apiService.esAdmin(restoredUser)) {
         setVistaActual('admin-dashboard');
       } else if (apiService.esCliente(restoredUser)) {
@@ -36,12 +54,16 @@ function App() {
   }, []);
 
   const handleLoginSuccess = (userData) => {
-    setUser({
+    const freshUser = {
       id: userData.id,
       username: userData.username,
       nombre: userData.nombre,
+      direccion: userData.direccion || '',
+      telefono: userData.telefono || '',
       rol: userData.rol || userData.role,
-    });
+    };
+    setUser(freshUser);
+    apiService.setSession(userData);
     if (apiService.esAdmin(userData)) {
       setVistaActual('admin-dashboard');
     } else {
@@ -137,6 +159,7 @@ function App() {
         return (
           <ClienteDashboard
             user={user}
+            setUser={setUser}
             setVistaActual={setVistaActual}
             openCart={() => setIsCartOpen(true)}
             setVentaActiva={setVentaActiva}
@@ -147,6 +170,7 @@ function App() {
         return (
           <AdminDashboard
             user={user}
+            setUser={setUser}
             adminSubTab={adminSubTab}
             setAdminSubTab={setAdminSubTab}
           />
