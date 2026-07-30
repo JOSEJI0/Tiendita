@@ -681,7 +681,7 @@ const ProductosTab = ({ productos, carga, error, busqueda, setBusqueda, onNuevo,
 );
 
 const VentasTab = ({ ventas, carga, error, onRecargar }) => {
-    const total = ventas.reduce((s, v) => s + Number(v?.total || 0), 0);
+    const total = ventas.filter(v => v?.estadoPago === 'PAGADO').reduce((s, v) => s + Number(v?.total || 0), 0);
     const pagadas = ventas.filter(v => v?.estadoPago === 'PAGADO').length;
 
     return (

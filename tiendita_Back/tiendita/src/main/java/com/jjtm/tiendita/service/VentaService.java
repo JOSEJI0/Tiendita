@@ -47,8 +47,6 @@ public class VentaService {
             if (producto.getStock() < detalle.getCantidad()) {
                 throw new RuntimeException("Stock insuficiente del producto: " + producto.getNombre());
             }
-            producto.setStock(producto.getStock() - detalle.getCantidad());
-            productoRepository.save(producto);
 
             detalle.setPrecioUnitario(producto.getPrecio());
             detalle.setSubtotal(detalle.getCantidad() * detalle.getPrecioUnitario());
@@ -75,13 +73,28 @@ public class VentaService {
             return clientesRepository.save(cliente);
         });
     }
+
     //Metodo para procesar pago
     @Transactional
     public VentaEntity confirmarPago(Long idVenta){
         VentaEntity venta = ventaRepository.findById(idVenta)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + idVenta));
-                    venta.setEstadoPago("PAGADO");
-                    return ventaRepository.save(venta);
+
+        if (!"PAGADO".equalsIgnoreCase(venta.getEstadoPago())) {
+            for (DetalleVentaEntity detalle : venta.getDetalles()) {
+                ProductoEntity producto = productoRepository.findById(detalle.getProducto().getId())
+                        .orElseThrow(() -> new RuntimeException("Producto no existe: " + detalle.getProducto().getId()));
+
+                if (producto.getStock() < detalle.getCantidad()) {
+                    throw new RuntimeException("Stock insuficiente para el producto: " + producto.getNombre() +
+                        ". Disponible: " + producto.getStock() + ", Requerido: " + detalle.getCantidad());
+                }
+                producto.setStock(producto.getStock() - detalle.getCantidad());
+                productoRepository.save(producto);
+            }
+            venta.setEstadoPago("PAGADO");
+        }
+        return ventaRepository.save(venta);
     }
 
     @Transactional(readOnly = true)
@@ -102,10 +115,21 @@ public class VentaService {
 
     @Transactional
     public void eliminarVenta(Long id) {
-        if (!ventaRepository.existsById(id)) {
-            throw new RuntimeException("Venta no encontrada " + id);
+        VentaEntity venta = ventaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada " + id));
+
+        if ("PAGADO".equalsIgnoreCase(venta.getEstadoPago())) {
+            for (DetalleVentaEntity detalle : venta.getDetalles()) {
+                if (detalle.getProducto() != null) {
+                    ProductoEntity producto = productoRepository.findById(detalle.getProducto().getId()).orElse(null);
+                    if (producto != null) {
+                        producto.setStock(producto.getStock() + detalle.getCantidad());
+                        productoRepository.save(producto);
+                    }
+                }
+            }
         }
-        ventaRepository.deleteById(id);
+        ventaRepository.delete(venta);
     }
 
     @Transactional
