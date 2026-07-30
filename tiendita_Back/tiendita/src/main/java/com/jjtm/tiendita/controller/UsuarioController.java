@@ -1,10 +1,14 @@
 package com.jjtm.tiendita.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +23,8 @@ import com.jjtm.tiendita.dto.CreateAdminRequest;
 import com.jjtm.tiendita.dto.UpdateUsuarioRequest;
 import com.jjtm.tiendita.modelo.UsuarioEntity;
 import com.jjtm.tiendita.repository.UsuarioRepository;
+import com.jjtm.tiendita.security.CustomUserDetailsService;
+import com.jjtm.tiendita.security.JwtTokenProvider;
 import com.jjtm.tiendita.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +36,8 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @GetMapping
     public ResponseEntity<List<UsuarioEntity>> listar() {
@@ -37,8 +45,17 @@ public class UsuarioController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioEntity> obtener(@PathVariable Long id) {
-        return ResponseEntity.ok(usuarioService.obtenerUsuario(id));
+    public ResponseEntity<?> obtener(@PathVariable Long id, Authentication authentication) {
+        String usernameActual = authentication.getName();
+        UsuarioEntity target = usuarioService.obtenerUsuario(id);
+        boolean esMismoUsuario = target.getUsername().equals(usernameActual);
+        boolean esAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!esMismoUsuario && !esAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No tienes permiso para ver este usuario.");
+        }
+        return ResponseEntity.ok(target);
     }
 
     @PostMapping
@@ -61,7 +78,21 @@ public class UsuarioController {
                         .body("No tienes permiso para actualizar este usuario.");
             }
             UsuarioEntity actualizado = usuarioService.actualizarUsuario(id, request);
-            return ResponseEntity.ok(actualizado);
+
+            String newToken = null;
+            if (esMismoUsuario && !actualizado.getUsername().equals(usernameActual)) {
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(actualizado.getUsername());
+                UsernamePasswordAuthenticationToken newAuth = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                newToken = jwtTokenProvider.generateToken(newAuth);
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("usuario", actualizado);
+            if (newToken != null) {
+                response.put("token", newToken);
+            }
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

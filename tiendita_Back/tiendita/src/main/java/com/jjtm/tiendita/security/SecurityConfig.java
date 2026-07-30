@@ -96,8 +96,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/pagos/**").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
 
                 .requestMatchers("/api/v1/clientes/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/{id}").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/usuarios/{id}").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/usuarios/{id}/password").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
                 .requestMatchers("/api/v1/usuarios/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/v1/usuarios/*/password").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
 
                 .anyRequest().authenticated()
             );

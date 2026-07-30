@@ -142,7 +142,11 @@ export const apiService = {
             headers: getHeaders(),
             body: JSON.stringify(data),
         });
-        return await handleResponse(response);
+        const resData = await handleResponse(response);
+        if (resData && resData.token) {
+            localStorage.setItem('token', resData.token);
+        }
+        return resData?.usuario || resData;
     },
     changePassword: async (id, data) => {
         const response = await fetch(API_URL+'usuarios/'+id+'/password', {
