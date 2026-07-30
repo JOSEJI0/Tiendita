@@ -1,5 +1,6 @@
 package com.jjtm.tiendita.security;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,11 +17,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -53,9 +54,21 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setContentType("application/json");
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("{\"error\":\"No autenticado\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setContentType("application/json");
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write("{\"error\":\"Acceso denegado: " + accessDeniedException.getMessage() + "\"}");
+                })
+            )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/auth/**")).permitAll()
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/health")).permitAll()
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/productos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/proveedores/**").permitAll()
@@ -74,11 +87,11 @@ public class SecurityConfig {
                 
                 .requestMatchers(HttpMethod.POST, "/api/v1/ventas").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/ventas").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/ventas/mis-compras")).hasAuthority("ROLE_CLIENTE")
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/pagos/**")).hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/ventas/mis-compras").hasAuthority("ROLE_CLIENTE")
+                .requestMatchers("/api/v1/pagos/**").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
 
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/clientes/**")).hasAuthority("ROLE_ADMIN")
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/usuarios/**")).hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/v1/clientes/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/v1/usuarios/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/usuarios/*/password").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
 
                 .anyRequest().authenticated()
