@@ -17,7 +17,9 @@ services:
       - tiendita-net
 
   backend:
-    build: ./tiendita_Back/tiendita
+    build:
+      context: .
+      dockerfile: tiendita_Back/tiendita/Dockerfile
     ports:
       - "8081:8081"
     environment:
@@ -26,7 +28,7 @@ services:
       DB_PASS: ${DB_PASS:?Debe definir DB_PASS}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:?Debe definir STRIPE_SECRET_KEY}
       JWT_SECRET: ${JWT_SECRET:?Debe definir JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://161.35.108.42:8082}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://161.35.108.42:8081}
     depends_on:
       db:
         condition: service_healthy
