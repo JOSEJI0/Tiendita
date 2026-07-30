@@ -7,12 +7,18 @@ const handleResponse = async (response) => {
         let message = raw;
         try {
             const parsed = JSON.parse(raw);
-            message = parsed.message || parsed.error || parsed || raw;
+            message = parsed.message || parsed.error || parsed.mensaje || raw;
         } catch (_) {}
         throw new Error(message || `Error ${response.status} en la API`);
     }
     if (response.status === 204) { return null; }
-    return await response.json();
+    const text = await response.text();
+    if (!text) return null;
+    try {
+        return JSON.parse(text);
+    } catch (_) {
+        return text;
+    }
 };
 
 // ===== Autenticación =====

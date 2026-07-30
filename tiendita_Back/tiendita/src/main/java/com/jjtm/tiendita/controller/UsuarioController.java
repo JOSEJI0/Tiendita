@@ -75,7 +75,7 @@ public class UsuarioController {
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
             if (!esMismoUsuario && !esAdmin) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("No tienes permiso para actualizar este usuario.");
+                        .body(Map.of("error", "No tienes permiso para actualizar este usuario."));
             }
             UsuarioEntity actualizado = usuarioService.actualizarUsuario(id, request);
 
@@ -94,7 +94,7 @@ public class UsuarioController {
             }
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -109,12 +109,12 @@ public class UsuarioController {
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
             if (!esMismoUsuario && !esAdmin) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("No tienes permiso para cambiar la contraseña de este usuario.");
+                        .body(Map.of("error", "No tienes permiso para cambiar la contraseña de este usuario."));
             }
             usuarioService.cambiarPassword(id, request);
-            return ResponseEntity.ok("Contraseña actualizada correctamente.");
+            return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente."));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
