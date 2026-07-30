@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Footer from './components/Footer';
 import { Catalogo } from './components/Catalogo';
 import { Navbar } from './components/NavBar';
@@ -52,11 +52,11 @@ function App() {
   //Funcion de carrito de compras
   const AddToCart = (producto) => {
     setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.producto.id);
+      const existing = prevCart.find((item) => item.producto.id === producto.id);
       if(existing){
         if(existing.cantidad >= producto.stock){
           alert("No se puede añadir mas stock para " + producto.nombre +
-            "Inventario disponible " + producto.stock);
+            ". Inventario disponible: " + producto.stock);
             return prevCart;
           }
           return prevCart.map((item) =>
