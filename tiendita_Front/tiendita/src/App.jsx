@@ -139,6 +139,8 @@ function App() {
             user={user}
             setVistaActual={setVistaActual}
             openCart={() => setIsCartOpen(true)}
+            setVentaActiva={setVentaActiva}
+            setCart={setCart}
           />
         );
       case 'admin-dashboard':

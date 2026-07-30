@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiService } from '../services/apiService';
-import { ShoppingBag, ListOrdered, AlertTriangle, RefreshCw, CheckCircle2, Clock, XCircle, Home, Search, User, Edit2, Key, Save, X, Mail } from 'lucide-react';
+import { ShoppingBag, ListOrdered, AlertTriangle, RefreshCw, CheckCircle2, Clock, XCircle, Home, Search, User, Edit2, Key, Save, X, Mail, CreditCard, ShoppingCart, Trash2 } from 'lucide-react';
 
 const ESTADO_STYLES = {
     PAGADO: { color: 'text-green-700', bg: 'bg-green-100', icon: CheckCircle2, label: 'Pagado' },
@@ -18,7 +18,7 @@ const formatFecha = (fecha) => {
     return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
-export const ClienteDashboard = ({ user, setVistaActual, openCart }) => {
+export const ClienteDashboard = ({ user, setVistaActual, openCart, setVentaActiva, setCart }) => {
     const [compras, setCompras] = useState([]);
     const [carga, setCarga] = useState(true);
     const [error, setError] = useState('');
@@ -93,6 +93,39 @@ export const ClienteDashboard = ({ user, setVistaActual, openCart }) => {
             cerrarCambiarPass();
         } catch (err) {
             alert(err?.message || 'No se pudo cambiar la contraseña.');
+        }
+    };
+
+    const handlePagarOrden = (venta) => {
+        if (setVentaActiva) setVentaActiva(venta);
+        if (setVistaActual) setVistaActual('checkout');
+    };
+
+    const handleEditarCarrito = async (venta) => {
+        if (venta.detalles && venta.detalles.length > 0 && setCart) {
+            const nuevosItems = venta.detalles.map((det) => ({
+                producto: det.producto,
+                cantidad: det.cantidad
+            }));
+            setCart(nuevosItems);
+        }
+        try {
+            await apiService.eliminarVenta(venta.id);
+        } catch (err) {
+            console.warn('No se pudo eliminar la orden previa:', err);
+        }
+        if (setVistaActual) setVistaActual('catalogo');
+        if (openCart) openCart();
+    };
+
+    const handleCancelarOrden = async (ventaId) => {
+        if (!window.confirm('¿Estás seguro de que deseas cancelar esta orden pendiente?')) return;
+        try {
+            await apiService.eliminarVenta(ventaId);
+            alert('Orden cancelada correctamente.');
+            cargar();
+        } catch (err) {
+            alert('Error al cancelar la orden: ' + (err.message || err));
         }
     };
 
@@ -312,6 +345,31 @@ export const ClienteDashboard = ({ user, setVistaActual, openCart }) => {
                                             {formatPrecio(v.total)}
                                         </div>
                                     </div>
+                                    {v?.estadoPago !== 'PAGADO' && (
+                                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+                                            <button
+                                                onClick={() => handlePagarOrden(v)}
+                                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                                            >
+                                                <CreditCard className="w-3.5 h-3.5" />
+                                                Pagar Orden
+                                            </button>
+                                            <button
+                                                onClick={() => handleEditarCarrito(v)}
+                                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                                            >
+                                                <ShoppingCart className="w-3.5 h-3.5" />
+                                                Seguir Comprando / Editar Carrito
+                                            </button>
+                                            <button
+                                                onClick={() => handleCancelarOrden(v.id)}
+                                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition-colors cursor-pointer"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
