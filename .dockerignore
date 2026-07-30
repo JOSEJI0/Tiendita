@@ -1,8 +1,0 @@
-.env
-.git/
-.gitignore
-*.md
-node_modules/
-target/
-.vscode/
-.agents/
